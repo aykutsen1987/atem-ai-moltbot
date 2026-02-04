@@ -1,55 +1,57 @@
-import TelegramBot from "node-telegram-bot-api";
 import express from "express";
-import OpenAI from "openai";
+import fetch from "node-fetch";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
-const botToken = process.env.TELEGRAM_BOT_TOKEN;
-const systemPrompt = process.env.SYSTEM_PROMPT;
-const openaiKey = process.env.OPENAI_API_KEY;
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
-if (!botToken || !systemPrompt || !openaiKey) {
-  throw new Error("Environment variables eksik");
+// Telegram'a mesaj gönder
+async function sendMessage(chatId, text) {
+  await fetch(`${TELEGRAM_API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text
+    })
+  });
 }
 
-const bot = new TelegramBot(botToken, { polling: true });
+// Basit Atem AI logic
+function getReply(message) {
+  const msg = message.toLowerCase();
 
-const openai = new OpenAI({
-  apiKey: openaiKey
+  if (msg.includes("merhaba") || msg.includes("selam"))
+    return "Merhaba, buradayım.";
+
+  if (msg.includes("nasılsın"))
+    return "İyiyim. Sana nasıl yardımcı olabilirim?";
+
+  return "Biraz daha açar mısın?";
+}
+
+// Telegram webhook
+app.post("/telegram", async (req, res) => {
+  const message = req.body.message;
+  if (!message) return res.sendStatus(200);
+
+  const chatId = message.chat.id;
+  const text = message.text || "";
+
+  const reply = getReply(text);
+  await sendMessage(chatId, reply);
+
+  res.sendStatus(200);
 });
 
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const userText = msg.text;
-
-  if (!userText) return;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userText }
-      ]
-    });
-
-    const reply = completion.choices[0].message.content;
-
-    await bot.sendMessage(chatId, reply);
-  } catch (err) {
-    await bot.sendMessage(
-      chatId,
-      "Şu anda yanıt veremiyorum, lütfen tekrar deneyin."
-    );
-  }
-});
-
-// Health check
+// Sağlık kontrolü
 app.get("/", (req, res) => {
-  res.send("Atem AI is running");
+  res.send("Atem AI backend çalışıyor");
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server ayakta:", PORT);
 });
