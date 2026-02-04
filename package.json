@@ -1,0 +1,14 @@
+{
+  "name": "atem-ai-moltbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.61.0",
+    "express": "^4.18.2",
+    "dotenv": "^16.4.5"
+  }
+}
