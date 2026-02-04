@@ -1,31 +1,51 @@
 import TelegramBot from "node-telegram-bot-api";
 import express from "express";
+import OpenAI from "openai";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
+const systemPrompt = process.env.SYSTEM_PROMPT;
+const openaiKey = process.env.OPENAI_API_KEY;
 
-if (!botToken) {
-  throw new Error("TELEGRAM_BOT_TOKEN eksik");
+if (!botToken || !systemPrompt || !openaiKey) {
+  throw new Error("Environment variables eksik");
 }
 
 const bot = new TelegramBot(botToken, { polling: true });
 
-// Basit Atem AI kimliği
-bot.on("message", (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text;
-
-  if (!text) return;
-
-  bot.sendMessage(
-    chatId,
-    "Merhaba, ben Atem AI. Size nasıl yardımcı olabilirim?"
-  );
+const openai = new OpenAI({
+  apiKey: openaiKey
 });
 
-// Render health check
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const userText = msg.text;
+
+  if (!userText) return;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userText }
+      ]
+    });
+
+    const reply = completion.choices[0].message.content;
+
+    await bot.sendMessage(chatId, reply);
+  } catch (err) {
+    await bot.sendMessage(
+      chatId,
+      "Şu anda yanıt veremiyorum, lütfen tekrar deneyin."
+    );
+  }
+});
+
+// Health check
 app.get("/", (req, res) => {
   res.send("Atem AI is running");
 });
