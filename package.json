@@ -1,7 +1,9 @@
 {
   "name": "atem-ai-backend",
   "version": "1.0.0",
+  "description": "Atem AI Render Backend",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
