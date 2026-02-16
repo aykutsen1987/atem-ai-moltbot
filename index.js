@@ -38,6 +38,11 @@ async function askGroq(message) {
     }
 
     const data = await response.json();
+
+    if (!data.choices || !data.choices[0]) {
+      return "Yanıt alınamadı, lütfen tekrar dene.";
+    }
+
     return data.choices[0].message.content;
 
   } catch (error) {
@@ -50,11 +55,13 @@ app.post("/ai_request", async (req, res) => {
   const { message } = req.body;
 
   if (!message) {
-    return res.json({ reply: "Mesaj boş." });
+    return res.json({ response: "Mesaj boş." });
   }
 
   const reply = await askGroq(message);
-  res.json({ reply });
+
+  // 🔥 UYGULAMANIN BEKLEDİĞİ FORMAT
+  res.json({ response: reply });
 });
 
 app.get("/", (req, res) => {
